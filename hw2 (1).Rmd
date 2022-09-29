@@ -72,34 +72,61 @@ stroke <- read_csv("https://raw.githubusercontent.com/MarshallRoll/STAT_253_Proj
 
 ```{r}
 # data cleaning
-
+stroke_clean <- stroke %>% 
+  filter(bmi != "N/A") %>% 
+  filter(smoking_status != "Unknown") %>% 
+  mutate(stroke_factor = factor(stroke))
 ```
 
 ```{r}
 # creation of cv folds
 
+stroke_cv <- vfold_cv(stroke_clean, v = 6)
 ```
 
 ```{r}
 # model spec
+lm_spec <-
+    logistic_reg(mixture = 1, penalty = 0) %>% 
+    set_engine(engine = 'glmnet') 
 
+lm_lasso_spec <- 
+  logistic_reg() %>%
+  set_args(mixture = 1, penalty = tune()) %>% 
+  set_engine(engine = 'glmnet') %>% 
+  set_mode('classification')
+
+modAll <- fit(lm_spec,
+            stroke_factor ~ ., 
+            data = stroke_clean)
 ```
 
 ```{r}
 # recipes & workflows
+all_rec <- recipe( stroke ~ . , data = stroke_clean) %>%
+    step_nzv(all_predictors()) %>% # removes variables with the same value
+    step_novel(all_nominal_predictors()) %>% # important if you have rare categorical variables 
+    step_normalize(all_numeric_predictors()) %>%  # important standardization step for LASSO
+    step_dummy(all_nominal_predictors())
 
+model_wf <- workflow() %>%
+  add_recipe(all_rec) %>%
+  add_model(lm_spec)
 ```
 
 ```{r}
 # fit & tune models
-
+modAll_cv <- fit_resamples(model_wf,
+  resamples = stroke_cv, 
+  metrics = metric_set(mae)
+)
 ```
 
 c.
 
 ```{r}
 #  calculate/collect CV metrics
-
+mod1_cv %>% collect_metrics()
 ```
 
  
@@ -117,13 +144,14 @@ e.
 2. **Summarize investigations**
     - Decide on an overall best model based on your investigations so far. To do this, make clear your analysis goals. Predictive accuracy? Interpretability? A combination of both?
 
-
+Due to our model predicting a classification outcome, we've come to a stopping point due to our limitation on the knowledge of logistic regressions. we are unsure what would be a good evaluation metric as well as how to proceed with a logistic regression.  
 
 <br>
 
 3. **Societal impact**
     - Are there any harms that may come from your analyses and/or how the data were collected?
     - What cautions do you want to keep in mind when communicating your work?
+we were unable to conclude where the data was sourced from. However, we believe that there were no societal harms in how it was collected as the information is fairly public and easy to gather. Additionally, there could be harms that stem from our analyses due to type 2 and 1 errors when predicting if an individual is at risk of having a stroke. we want to be absolutely clear that our analyses and prediction will not be 100% correct when predicting if an individual is at risk of having a stroke.
 
 
 
