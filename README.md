@@ -1,2 +1,3 @@
 # STAT_253_Project
-STAT 253 Project
+
+In this project, we are working to predict whether or not individuals will have a stroke. 
