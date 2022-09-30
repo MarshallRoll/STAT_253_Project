@@ -114,8 +114,9 @@ model_wf <- workflow() %>%
   add_model(lm_spec)
 ```
 
-```{r}
+```{r, eval = FALSE}
 # fit & tune models
+# this is where our code broke
 modAll_cv <- fit_resamples(model_wf,
   resamples = stroke_cv, 
   metrics = metric_set(mae)
@@ -144,7 +145,7 @@ e.
 2. **Summarize investigations**
     - Decide on an overall best model based on your investigations so far. To do this, make clear your analysis goals. Predictive accuracy? Interpretability? A combination of both?
 
-Due to our model predicting a classification outcome, we've come to a stopping point due to our limitation on the knowledge of logistic regressions. we are unsure what would be a good evaluation metric as well as how to proceed with a logistic regression.  
+Because we only have three quantitative variables in our model, we tried to predict a classification outcome. However, we've come to a stopping point due to our limitation on the knowledge of logistic regressions. We are unsure what would be a good evaluation metric as well as how to proceed with a logistic regression. We talked with Bryan and he told us that we should find a new dataset that has suitable outcome variables and resubmit the linear regression portion of the assignment next week.   
 
 <br>
 
