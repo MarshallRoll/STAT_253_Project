@@ -71,44 +71,45 @@ library(tidymodels)
 tidymodels_prefer() # Resolves conflicts, prefers tidymodel functions
 # read in data
 
-stroke <- read_csv("https://raw.githubusercontent.com/MarshallRoll/STAT_253_Project/main/heart_failure_clinical_records_dataset.csv?token=GHSAT0AAAAAABYKVOXKORADZLO6WXN56BNOY2MPPRQ")
+heart_failure <- read_csv("https://raw.githubusercontent.com/MarshallRoll/STAT_253_Project/main/heart_failure_clinical_records_dataset.csv?token=GHSAT0AAAAAABYKVOXKORADZLO6WXN56BNOY2MPPRQ")
 
 ```
 
 ```{r}
 # data cleaning
-stroke_clean <- stroke %>% 
-  filter(bmi != "N/A") %>% 
-  filter(smoking_status != "Unknown") %>% 
-  mutate(stroke_factor = factor(stroke))
+#stroke_clean <- heart_failure %>% 
+  #filter(bmi != "N/A") %>% 
+  #filter(smoking_status != "Unknown") %>% 
+  #mutate(stroke_factor = factor(stroke))
 ```
 
 ```{r}
 # creation of cv folds
 
-stroke_cv <- vfold_cv(stroke_clean, v = 6)
+heart_failure_cv <- vfold_cv(heart_failure, v = 13)
 ```
 
 ```{r}
 # model spec
 lm_spec <-
-    logistic_reg(mixture = 1, penalty = 0) %>% 
-    set_engine(engine = 'glmnet') 
+    linear_reg() %>% 
+    set_engine(engine = 'lm') %>% 
+    set_mode("regression")
 
 lm_lasso_spec <- 
-  logistic_reg() %>%
+  linear_reg() %>%
   set_args(mixture = 1, penalty = tune()) %>% 
   set_engine(engine = 'glmnet') %>% 
-  set_mode('classification')
+  set_mode('regression')
 
 modAll <- fit(lm_spec,
-            stroke_factor ~ ., 
-            data = stroke_clean)
+            platelets ~ ., 
+            data = heart_failure)
 ```
 
 ```{r}
 # recipes & workflows
-all_rec <- recipe( stroke ~ . , data = stroke_clean) %>%
+all_rec <- recipe( platelets ~ . , data = heart_failure) %>%
     step_nzv(all_predictors()) %>% # removes variables with the same value
     step_novel(all_nominal_predictors()) %>% # important if you have rare categorical variables 
     step_normalize(all_numeric_predictors()) %>%  # important standardization step for LASSO
@@ -117,13 +118,17 @@ all_rec <- recipe( stroke ~ . , data = stroke_clean) %>%
 model_wf <- workflow() %>%
   add_recipe(all_rec) %>%
   add_model(lm_spec)
+
+full_model <- fit(model_wf, data = heart_failure) 
+
+full_model %>% tidy()
 ```
 
 ```{r, eval = FALSE}
 # fit & tune models
 # this is where our code broke
 modAll_cv <- fit_resamples(model_wf,
-  resamples = stroke_cv, 
+  resamples = heart_failure_cv, 
   metrics = metric_set(mae)
 )
 ```
@@ -132,13 +137,23 @@ c.
 
 ```{r}
 #  calculate/collect CV metrics
-mod1_cv %>% collect_metrics()
+modAll_cv %>% collect_metrics()
 ```
 
 d.  
 
 ```{r}
 # visual residuals
+lasso_mod_out <- final_fit_se %>%
+    predict(new_data = cars2018) %>%
+    bind_cols(cars2018) %>%
+    mutate(resid = mpg - .pred)
+lasso_mod_out %>% 
+  ggplot(aes(x = .pred, y = resid)) + 
+  geom_point() +
+  geom_smooth(se = FALSE) + 
+  geom_hline(yintercept = 0) + 
+  theme_classic()
 
 ```
 
