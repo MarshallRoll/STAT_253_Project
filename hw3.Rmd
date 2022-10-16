@@ -77,8 +77,8 @@ heart_failure <- read_csv("https://raw.githubusercontent.com/MarshallRoll/STAT_2
 
 ```{r data-clean}
 #data cleaning
-# heart_failure <- heart_failure %>%
-#   select(-DEATH_EVENT)
+ heart_failure <- heart_failure %>%
+   select(-DEATH_EVENT)
 ```
 
 ```{r cross-validation}
@@ -231,6 +231,42 @@ e.
         - How does test performance of the GAMs compare to other models you explored?
 
     - Don't worry about KNN for now.
+
+```{r}
+# Generalized Additive Regression (GAM) Model
+
+gam_spec <- 
+  gen_additive_mod() %>%
+  set_engine(engine = 'mgcv') %>%
+  set_mode('regression') 
+            
+spline_rec <- all_rec %>%
+    step_ns(serum_creatinine, deg_free = 2) 
+
+
+serum_wf <- workflow() %>%
+    add_model(lm_spec) %>%
+    add_recipe(all_rec)
+
+spline_wf <- workflow() %>%
+    add_model(lm_spec) %>%
+    add_recipe(spline_rec)
+
+fit_resamples(
+    serum_wf,
+    resamples = heart_failure_cv, # cv folds
+    metrics = metric_set(mae,rmse,rsq)                     
+) %>% collect_metrics()
+
+fit_gam_model <- gam_spec %>% # can't use a recipe with gam (yet)
+  fit(heart_failure$platelets ~ s(heart_failure$serum_creatinine) + age + anaemia + creatinine_phosphokinase + diabetes + ejection_fraction + high_blood_pressure + serum_sodium + sex + smoking, data = heart_failure) # s() stands for splines, indicating a non-linear relationship  
+
+fit_gam_model %>% pluck('fit') %>% summary() 
+
+# Diagnostics: Check to see if the number of knots is large enough (if p-value is low, increase number of knots)
+par(mfrow=c(2,2))
+fit_gam_model %>% pluck('fit') %>% mgcv::gam.check() 
+```
 
 <br>
 
