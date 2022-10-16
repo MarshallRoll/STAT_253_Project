@@ -122,15 +122,45 @@ model_wf <- workflow() %>%
 full_model <- fit(model_wf, data = heart_failure) 
 
 full_model %>% tidy()
+
+lasso_wf <- workflow() %>% 
+  add_recipe(all_rec) %>%
+  add_model(lm_lasso_spec)
+
+# Fit Model
+lasso_fit <- lasso_wf %>% 
+  fit(data = heart_failure) # Fit to data
+
 ```
 
 ```{r, eval = FALSE}
 # fit & tune models
-# this is where our code broke
-modAll_cv <- fit_resamples(model_wf,
-  resamples = heart_failure_cv, 
-  metrics = metric_set(mae)
+
+# Tune Model (trying a variety of values of Lambda penalty) !!!!
+penalty_grid <- grid_regular(
+  penalty(range = c(-5, 3)), #log10 transformed 10^-5 to 10^3
+  levels = 30)
+
+tune_res <- tune_grid( # new function for tuning parameters
+  lasso_wf, # workflow
+  resamples = heart_failure_cv, # cv folds
+  metrics = metric_set(rmse, mae),
+  grid = penalty_grid # penalty grid defined above
 )
+
+# Visualize Model Evaluation Metrics from Tuning
+autoplot(tune_res) + theme_classic()
+
+# Summarize Model Evaluation Metrics (CV)
+collect_metrics(tune_res) %>%
+  filter(.metric == 'rmse') %>% # or choose mae
+  select(penalty, rmse = mean) 
+
+best_penalty <- select_best(tune_res, metric = 'rmse') # choose penalty value based on lowest mae or rmse
+
+# Fit Final Model
+final_wf <- finalize_workflow(lasso_wf, best_penalty) # incorporates penalty value to workflow
+
 ```
 
 c.  
@@ -144,10 +174,10 @@ d.
 
 ```{r}
 # visual residuals
-lasso_mod_out <- final_fit_se %>%
-    predict(new_data = cars2018) %>%
-    bind_cols(cars2018) %>%
-    mutate(resid = mpg - .pred)
+lasso_mod_out <- final_wf %>%
+    predict(new_data = heart_failure) %>%
+    bind_cols(heart_failure) %>%
+    mutate(resid = platelets - .pred)
 lasso_mod_out %>% 
   ggplot(aes(x = .pred, y = resid)) + 
   geom_point() +
