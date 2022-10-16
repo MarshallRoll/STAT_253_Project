@@ -217,7 +217,8 @@ ggplot(modAll_output, aes(x = modAll_output$serum_sodium, y = resid)) +
     theme_classic()
 ```
 
-e.
+e. sex is the most important predictor variable for our quantitative outcome of platelets. This is because it stayed in our model the longest as we continued to raise the penalty value. Yes, this is suprising as sex is a categorical variable; having it perform better than quantitative variables to be unexpected. This highlights our model to not be very strong as we only had one predictor variable in our model at the end. 
+
 2. **Accounting for nonlinearity**
     - Update your models to use natural splines for some of the quantitative predictors to account for non-linearity (these are GAMs).
         - I recommend using OLS engine to fit these final models.
@@ -231,7 +232,8 @@ e.
         - How does test performance of the GAMs compare to other models you explored?
 
     - Don't worry about KNN for now.
-
+    
+The evaluated metrics for the GAM model performed worse than the linear model with every predictor. The rmse value for our GAM model was higher than the linear model.  
 ```{r}
 # Generalized Additive Regression (GAM) Model
 
@@ -273,13 +275,14 @@ fit_gam_model %>% pluck('fit') %>% mgcv::gam.check()
 3. **Summarize investigations**
     - Decide on an overall best model based on your investigations so far. To do this, make clear your analysis goals. Predictive accuracy? Interpretability? A combination of both?
 
+None of these models appear to be very good predictors of platelets. Of our models the Lasso model is the best as it has the lowest rmse value and is the most interpretable. 
 <br>
 
 4. **Societal impact**
     - Are there any harms that may come from your analyses and/or how the data were collected?
     - What cautions do you want to keep in mind when communicating your work?
 
-
+This data was sourced from Davide Chicco, Giuseppe Jurman: Machine learning can predict survival of patients with heart failure from serum creatinine and ejection fraction alone. BMC Medical Informatics and Decision Making 20, 16 (2020).There are no harms that come from our analysis. 
 
 <br><br><br>
 
