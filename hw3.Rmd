@@ -71,7 +71,7 @@ library(tidymodels)
 tidymodels_prefer() # Resolves conflicts, prefers tidymodel functions
 # read in data
 
-stroke <- read_csv("https://raw.githubusercontent.com/MarshallRoll/STAT_253_Project/main/healthcare-dataset-stroke-data.csv?token=GHSAT0AAAAAABYKVOXKMH7IB4EZKBMHI4YSYZWBEIQ")
+stroke <- read_csv("https://raw.githubusercontent.com/MarshallRoll/STAT_253_Project/main/heart_failure_clinical_records_dataset.csv?token=GHSAT0AAAAAABYKVOXKORADZLO6WXN56BNOY2MPPRQ")
 
 ```
 
