@@ -56,7 +56,93 @@ Alternatively, you may knit your Rmd directly to PDF if you have LaTeX installed
         
 Note: after this process, you might have a set of models (one of which has predictors chosen using LASSO, one model with all the predictors of interest, and perhaps some models with subsets of predictors that were chosen based on the data context rather than an algorithmic process)
 <br>
+a & b.
 
+```{r}
+## See answer to Q2 to explain irregularities
+
+# library statements 
+library(ISLR)
+library(dplyr)
+library(readr)
+library(broom)
+library(ggplot2)
+library(tidymodels) 
+tidymodels_prefer() # Resolves conflicts, prefers tidymodel functions
+# read in data
+
+stroke <- read_csv("https://raw.githubusercontent.com/MarshallRoll/STAT_253_Project/main/healthcare-dataset-stroke-data.csv?token=GHSAT0AAAAAABYKVOXKMH7IB4EZKBMHI4YSYZWBEIQ")
+
+```
+
+```{r}
+# data cleaning
+stroke_clean <- stroke %>% 
+  filter(bmi != "N/A") %>% 
+  filter(smoking_status != "Unknown") %>% 
+  mutate(stroke_factor = factor(stroke))
+```
+
+```{r}
+# creation of cv folds
+
+stroke_cv <- vfold_cv(stroke_clean, v = 6)
+```
+
+```{r}
+# model spec
+lm_spec <-
+    logistic_reg(mixture = 1, penalty = 0) %>% 
+    set_engine(engine = 'glmnet') 
+
+lm_lasso_spec <- 
+  logistic_reg() %>%
+  set_args(mixture = 1, penalty = tune()) %>% 
+  set_engine(engine = 'glmnet') %>% 
+  set_mode('classification')
+
+modAll <- fit(lm_spec,
+            stroke_factor ~ ., 
+            data = stroke_clean)
+```
+
+```{r}
+# recipes & workflows
+all_rec <- recipe( stroke ~ . , data = stroke_clean) %>%
+    step_nzv(all_predictors()) %>% # removes variables with the same value
+    step_novel(all_nominal_predictors()) %>% # important if you have rare categorical variables 
+    step_normalize(all_numeric_predictors()) %>%  # important standardization step for LASSO
+    step_dummy(all_nominal_predictors())
+
+model_wf <- workflow() %>%
+  add_recipe(all_rec) %>%
+  add_model(lm_spec)
+```
+
+```{r, eval = FALSE}
+# fit & tune models
+# this is where our code broke
+modAll_cv <- fit_resamples(model_wf,
+  resamples = stroke_cv, 
+  metrics = metric_set(mae)
+)
+```
+
+c.  
+
+```{r}
+#  calculate/collect CV metrics
+mod1_cv %>% collect_metrics()
+```
+
+d.  
+
+```{r}
+# visual residuals
+
+```
+
+e.
 2. **Accounting for nonlinearity**
     - Update your models to use natural splines for some of the quantitative predictors to account for non-linearity (these are GAMs).
         - I recommend using OLS engine to fit these final models.
