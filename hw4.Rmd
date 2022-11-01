@@ -19,6 +19,74 @@ Reflect on the information gained from these two methods and how you might justi
 
 Keep in mind that the final project will require you to complete the pieces below. Use this as a guide for your work but don’t try to accomplish everything for HW4:
 
+```{r}
+## See answer to Q2 to explain irregularities
+
+# library statements 
+library(ISLR)
+library(dplyr)
+library(readr)
+library(broom)
+library(ggplot2)
+library(tidymodels) 
+tidymodels_prefer() # Resolves conflicts, prefers tidymodel functions
+# read in data
+
+stroke <- read_csv("https://raw.githubusercontent.com/MarshallRoll/STAT_253_Project/main/healthcare-dataset-stroke-data.csv?token=GHSAT0AAAAAABYKVOXLYSU2FXMHWYWTLTSWY3BOSCA")
+
+```
+```{r}
+# data cleaning
+stroke_clean <- stroke %>% 
+  filter(bmi != "N/A") %>% 
+  filter(smoking_status != "Unknown") %>% 
+  mutate(stroke_factor = factor(stroke))
+```
+```{r}
+# creation of cv folds
+
+stroke_cv <- vfold_cv(stroke_clean, v = 6)
+```
+
+```{r}
+# model spec
+lm_spec <-
+    logistic_reg(mixture = 1, penalty = 0) %>% 
+    set_engine(engine = 'glmnet') 
+
+lm_lasso_spec <- 
+  logistic_reg() %>%
+  set_args(mixture = 1, penalty = tune()) %>% 
+  set_engine(engine = 'glmnet') %>% 
+  set_mode('classification')
+
+modAll <- fit(lm_spec,
+            stroke_factor ~ ., 
+            data = stroke_clean)
+```
+
+```{r}
+# recipes & workflows
+all_rec <- recipe( stroke ~ . , data = stroke_clean) %>%
+    step_nzv(all_predictors()) %>% # removes variables with the same value
+    step_novel(all_nominal_predictors()) %>% # important if you have rare categorical variables 
+    step_normalize(all_numeric_predictors()) %>%  # important standardization step for LASSO
+    step_dummy(all_nominal_predictors())
+
+model_wf <- workflow() %>%
+  add_recipe(all_rec) %>%
+  add_model(lm_spec)
+```
+
+```{r, eval = FALSE}
+# fit & tune models
+# this is where our code broke
+modAll_cv <- fit_resamples(model_wf,
+  resamples = stroke_cv, 
+  metrics = metric_set(mae)
+)
+```
+
 Classification - Methods
 Indicate at least 2 different methods used to answer your classification research question.
 Describe what you did to evaluate the models explored.
