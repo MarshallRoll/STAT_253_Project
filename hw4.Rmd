@@ -19,7 +19,7 @@ library(probably)
 tidymodels_prefer() # Resolves conflicts, prefers tidymodel functions
 # read in data
 
-stroke <- read_csv("https://raw.githubusercontent.com/MarshallRoll/STAT_253_Project/main/healthcare-dataset-stroke-data.csv?token=GHSAT0AAAAAABYKVOXLYSU2FXMHWYWTLTSWY3BOSCA")
+stroke <- read_csv("https://raw.githubusercontent.com/MarshallRoll/STAT_253_Project/main/healthcare-dataset-stroke-data.csv?token=GHSAT0AAAAAABYKVOXLQBJENJTQ27T53WIWY3BQ27Q")
 
 ```
 ```{r}
