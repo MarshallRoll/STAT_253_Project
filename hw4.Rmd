@@ -1,8 +1,10 @@
 ---
-title: "hw4"
-author: "Marshall Roll"
+title: "Homework 4"
+author: "Marshall Roll, Kenny Nhan, Emily Neuman"
 date: "2022-11-01"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r}
@@ -19,7 +21,7 @@ library(probably)
 tidymodels_prefer() # Resolves conflicts, prefers tidymodel functions
 # read in data
 
-stroke <- read_csv("https://raw.githubusercontent.com/MarshallRoll/STAT_253_Project/main/healthcare-dataset-stroke-data.csv?token=GHSAT0AAAAAABYKVOXLQBJENJTQ27T53WIWY3BQ27Q")
+stroke <- read_csv("https://raw.githubusercontent.com/MarshallRoll/STAT_253_Project/main/healthcare-dataset-stroke-data.csv?token=GHSAT0AAAAAAB2VESBM5CKF2AR2WIX2MS76Y3CZIYQ")
 
 ```
 ```{r}
