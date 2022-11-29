@@ -16,6 +16,7 @@ library(broom)
 library(ggplot2)
 library(tidymodels) 
 library(probably)
+library(rpart.plot)
 tidymodels_prefer() # Resolves conflicts, prefers tidymodel functions
 # read in data
 
@@ -179,6 +180,65 @@ final_output %>%
 ```
 We choose this threshold in an effort tor prioritize a higher specificity in the context of the data. When using this model to predict whether or not someone will have a stroke, it is important that the number of false positives is higher than the number of false negatives. Meaning that we are more likely to over predict a stroke than tell someone who is going to have a stroke they are not going to.  
 
+```{r}
+set.seed(10)
+
+ct_spec_tune <- decision_tree() %>%
+  set_engine(engine = 'rpart') %>%
+  set_args(cost_complexity = tune(),  
+           min_n = 2, 
+           tree_depth = NULL) %>% 
+  set_mode('classification') 
+
+data_rec <- recipe(stroke ~ ., data = stroke_clean)%>%
+    step_normalize(all_numeric_predictors()) %>% 
+    step_dummy(all_nominal_predictors())
+
+data_wf_tune <- workflow() %>%
+  add_model(ct_spec_tune) %>%
+  add_recipe(data_rec)
+
+param_grid <- grid_regular(cost_complexity(range = c(-5, 1)), levels = 10) 
+
+tune_res <- tune_grid(
+  data_wf_tune, 
+  resamples = stroke_cv, 
+  grid = param_grid, 
+  metrics = metric_set(accuracy) #change this for regression trees
+)
+autoplot(tune_res) + theme_classic()
+```
+```{r}
+best_complexity <- select_by_one_std_err(tune_res, metric = 'accuracy', desc(cost_complexity))
+data_wf_final <- finalize_workflow(data_wf_tune, best_complexity)
+
+stroke_clean_final_fit <- fit(data_wf_final, data = stroke_clean)
+
+
+tune_res %>% 
+  collect_metrics() %>%
+  filter(cost_complexity == best_complexity %>% pull(cost_complexity))
+```
+```{r}
+tree_mod_lowcp <- fit(
+    data_wf_tune %>%
+        update_model(ct_spec_tune %>% set_args(cost_complexity = .0001)),
+    data = stroke_clean
+)
+tree_mod_highcp <- fit(
+    data_wf_tune %>%
+        update_model(ct_spec_tune %>% set_args(cost_complexity = .1)),
+    data = stroke_clean
+)
+
+tree_mod_lowcp %>% extract_fit_engine() %>% rpart.plot()
+```
+```{r}
+stroke_clean_final_fit %>% extract_fit_engine() %>% rpart.plot()
+```
+```{r}
+tree_mod_highcp %>% extract_fit_engine() %>% rpart.plot()
+```
 
 Classification - Methods
 Indicate at least 2 different methods used to answer your classification research question.
