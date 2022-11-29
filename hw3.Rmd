@@ -71,7 +71,7 @@ library(tidymodels)
 tidymodels_prefer() # Resolves conflicts, prefers tidymodel functions
 # read in data
 
-heart_failure <- read_csv("https://raw.githubusercontent.com/MarshallRoll/STAT_253_Project/main/heart_failure_clinical_records_dataset.csv?token=GHSAT0AAAAAABYKVOXKORADZLO6WXN56BNOY2MPPRQ")
+heart_failure <- read_csv("https://raw.githubusercontent.com/MarshallRoll/STAT_253_Project/main/heart_failure_clinical_records_dataset.csv")
 
 ```
 
@@ -140,11 +140,14 @@ tune_res <- tune_grid( # new function for tuning parameters
   grid = penalty_grid # penalty grid defined above
 )
 
+autoplot(tune_res) + theme_classic()
 
-best_penalty <- select_best(tune_res, metric = 'rmse') # choose penalty value based on lowest mae or rmse
+best_se_penalty <- select_by_one_std_err(tune_res, metric = 'mae', desc(penalty))
+
+# best_penalty <- select_best(tune_res, metric = 'rmse') # choose penalty value based on lowest mae or rmse
 
 # Fit Final Model
-final_wf <- finalize_workflow(lasso_wf, best_penalty) # incorporates penalty value to workflow
+final_wf <- finalize_workflow(lasso_wf, best_se_penalty) # incorporates penalty value to workflow
 
 final_fit <- fit(final_wf, data = heart_failure)
 
