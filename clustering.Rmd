@@ -1,0 +1,68 @@
+---
+title: "clustering"
+author: "Marshall Roll"
+date: "2022-11-15"
+output: pdf_document
+---
+
+```{r}
+# library statements 
+library(ISLR)
+library(dplyr)
+library(readr)
+library(broom)
+library(ggplot2)
+library(tidymodels) 
+library(probably)
+library(cluster)
+tidymodels_prefer() # Resolves conflicts, prefers tidymodel functions
+# read in data
+
+stroke <- read_csv("https://raw.githubusercontent.com/MarshallRoll/STAT_253_Project/main/healthcare-dataset-stroke-data.csv?token=GHSAT0AAAAAAB2VESBM5CKF2AR2WIX2MS76Y3CZIYQ")
+```
+
+```{r}
+stroke_scaled <- stroke %>% 
+  mutate(across(where(is.numeric), scale))
+
+stroke_scaled <- stroke_scaled %>% 
+  mutate(across(where(is.character), as.factor))
+```
+
+```{r}
+stroke_cluster <- hclust(dist(stroke_scaled) + (daisy(stroke_scaled %>% select(where(is.factor)), metric = "gower")), method = "complete")
+plot(stroke_cluster)
+```
+
+
+```{r}
+stroke_scaled <- stroke_scaled %>% 
+  mutate(hclust_4 = factor(cutree(stroke_cluster, k = 4)))
+
+stroke_scaled %>% 
+  ggplot(aes(x = stroke$gender, y = stroke_scaled$)) +
+  coord_flip()+
+  geom_boxplot() +
+  labs(y = "Cluster", x = "Normalized Annual Income") +
+  theme_classic() 
+```
+
+```{r}
+penguin_cluster_ss <- function(k){
+    # Perform clustering
+    hclust <- hclust(scale(penguins_sub), k = 4)
+
+    # Return the total within-cluster sum of squares
+    return(hclust$tot.withinss) #run in console and find information about what the within ss variation is called
+}
+
+tibble(
+    k = 1:15,
+    tot_wc_ss = purrr::map_dbl(1:15, penguin_cluster_ss)
+) %>% 
+    ggplot(aes(x = k, y = tot_wc_ss)) +
+    geom_point() + 
+    labs(x = "Number of clusters",y = 'Total within-cluster sum of squares') + 
+    theme_classic()
+```
+
