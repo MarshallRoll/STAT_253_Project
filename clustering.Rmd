@@ -37,32 +37,29 @@ plot(stroke_cluster)
 
 ```{r}
 stroke_scaled <- stroke_scaled %>% 
-  mutate(hclust_4 = factor(cutree(stroke_cluster, k = 4)))
+  mutate(hclust_4 = factor(cutree(stroke_cluster, k = 4)), 
+         hclust_3 = factor(cutree(stroke_cluster, k = 3)), 
+         hclust_5 = factor(cutree(stroke_cluster, k = 5))) 
 
 stroke_scaled %>% 
-  ggplot(aes(x = stroke$gender, y = stroke_scaled$)) +
-  coord_flip()+
-  geom_boxplot() +
-  labs(y = "Cluster", x = "Normalized Annual Income") +
-  theme_classic() 
+  ggplot(aes(x = as.numeric(bmi), y = as.numeric(avg_glucose_level),
+             color = hclust_5)) +
+geom_point() 
+
 ```
 
 ```{r}
-penguin_cluster_ss <- function(k){
-    # Perform clustering
-    hclust <- hclust(scale(penguins_sub), k = 4)
-
-    # Return the total within-cluster sum of squares
-    return(hclust$tot.withinss) #run in console and find information about what the within ss variation is called
+wss <- function(d) {
+  sum(scale(d, scale = FALSE)^2)
 }
 
-tibble(
-    k = 1:15,
-    tot_wc_ss = purrr::map_dbl(1:15, penguin_cluster_ss)
-) %>% 
-    ggplot(aes(x = k, y = tot_wc_ss)) +
-    geom_point() + 
-    labs(x = "Number of clusters",y = 'Total within-cluster sum of squares') + 
-    theme_classic()
+wrap <- function(i, hc, x) {
+  cl <- cutree(hc, i)
+  spl <- split(x, cl)
+  wss <- sum(sapply(spl, wss))
+  wss
+}
+
+wrap(3, stroke_cluster, )
 ```
 
