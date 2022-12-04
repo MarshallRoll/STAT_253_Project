@@ -19,6 +19,7 @@ library(ggplot2)
 library(tidymodels) 
 library(probably)
 library(rpart.plot)
+library(vip)
 tidymodels_prefer() # Resolves conflicts, prefers tidymodel functions
 # read in data
 
@@ -235,11 +236,12 @@ tree_mod_highcp <- fit(
 
 tree_mod_lowcp %>% extract_fit_engine() %>% rpart.plot()
 ```
+
+
 ```{r}
-stroke_clean_final_fit %>% extract_fit_engine() %>% rpart.plot()
-```
-```{r}
-tree_mod_highcp %>% extract_fit_engine() %>% rpart.plot()
+tree_mod_lowcp %>% 
+    extract_fit_engine() %>% 
+    vip(num_features = 30) + theme_classic()
 ```
 
 Classification - Methods
