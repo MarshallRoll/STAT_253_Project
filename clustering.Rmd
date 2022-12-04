@@ -12,18 +12,28 @@ library(dplyr)
 library(readr)
 library(broom)
 library(ggplot2)
+library(factoextra)
+library(reactable)
 library(tidymodels) 
 library(probably)
+library(ggthemes)
 library(cluster)
 tidymodels_prefer() # Resolves conflicts, prefers tidymodel functions
 # read in data
 
 stroke <- read_csv("https://raw.githubusercontent.com/MarshallRoll/STAT_253_Project/main/healthcare-dataset-stroke-data.csv?token=GHSAT0AAAAAAB2VESBM5CKF2AR2WIX2MS76Y3CZIYQ")
+
+stroke_clean <- stroke %>% 
+  filter(bmi != "N/A") %>% 
+  filter(smoking_status != "Unknown") %>% 
+  select(-id)
 ```
 
 ```{r}
-stroke_scaled <- stroke %>% 
-  mutate(across(where(is.numeric), scale))
+stroke_scaled <- stroke_clean %>% 
+  mutate(age = scale(age)) %>% 
+  mutate(avg_glucose_level = scale(avg_glucose_level)) %>% 
+  mutate(bmi = scale(as.numeric(bmi)))
 
 stroke_scaled <- stroke_scaled %>% 
   mutate(across(where(is.character), as.factor))
@@ -31,35 +41,73 @@ stroke_scaled <- stroke_scaled %>%
 
 ```{r}
 stroke_cluster <- hclust(dist(stroke_scaled) + (daisy(stroke_scaled %>% select(where(is.factor)), metric = "gower")), method = "complete")
+
 plot(stroke_cluster)
 ```
+## important clustering variables: bmi, average glucose levels
 
+## slightly important clustering variables: hypertension,
+## unimportant clustering variables: age, ever_married, residence type, smoking status
 
 ```{r}
 stroke_scaled <- stroke_scaled %>% 
   mutate(hclust_4 = factor(cutree(stroke_cluster, k = 4)), 
-         hclust_3 = factor(cutree(stroke_cluster, k = 3)), 
+         hclust_6 = factor(cutree(stroke_cluster, k = 6)), 
          hclust_5 = factor(cutree(stroke_cluster, k = 5))) 
 
+hclust_4 <- factor(cutree(stroke_cluster, k = 4))
+
 stroke_scaled %>% 
-  ggplot(aes(x = as.numeric(bmi), y = as.numeric(avg_glucose_level),
-             color = hclust_5)) +
-geom_point() 
+  ggplot(aes(x = as.numeric(bmi),
+             y = as.numeric(avg_glucose_level),
+             color = hclust_6)) +
+  geom_point() +
+  labs(x = "Normalized Body Mass Index (BMI)",
+       y = "Normalized Average Glucose Levels") + 
+  guides(color=guide_legend(title="Cluster")) +
+  theme_minimal()
+
+stroke_scaled %>% 
+  ggplot(aes(x = as.numeric(bmi),
+             y = as.numeric(avg_glucose_level),
+             color = hclust_6, alpha = stroke)) +
+  geom_point() + 
+  scale_x_continuous(limits = c(-3, 4)) + 
+  labs(x = "Normalized Body Mass Index (BMI)",
+       y = "Normalized Average Glucose Levels") + 
+  guides(color=guide_legend(title="Cluster")) +
+  guides(alpha = "none") +
+  theme_minimal()
+  
+# stroke_scaled %>% 
+#   ggplot(aes(x = hclust_6, y = as.numeric(avg_glucose_level), 
+#              fill = factor(stroke))) +
+#   geom_boxplot()
+
+
+stroke_scaled %>% 
+  group_by(hclust_6) %>% 
+  summarize("Total Cases" = n(),
+            "Number of Strokes" = sum(stroke == 1), 
+            "Proportion of Strokes" = round(sum(stroke == 1) / n(), 2)
+            )
+
+stroke_scaled %>% 
+  mutate(stroke = factor(stroke, labels = c("No Stroke", "Stroke"))) %>%
+  ggplot(aes(x = stroke, fill = hclust_6)) + 
+  geom_bar(position = "fill") +
+  labs(x = "", y = "Relative Frequency", title = "Relative Frequency of Stroke Event by Cluster") +
+  theme_light() + 
+  guides(fill=guide_legend(title="Cluster")) + 
+  theme(plot.title = element_text(hjust = 0.5))
+
+
 
 ```
 
+
+
 ```{r}
-wss <- function(d) {
-  sum(scale(d, scale = FALSE)^2)
-}
-
-wrap <- function(i, hc, x) {
-  cl <- cutree(hc, i)
-  spl <- split(x, cl)
-  wss <- sum(sapply(spl, wss))
-  wss
-}
-
-wrap(3, stroke_cluster, )
+fviz_nbclust(stroke_scaled, FUN = hcut, method = "wss")
 ```
 
